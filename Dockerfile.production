@@ -1,0 +1,21 @@
+FROM golang:1.16.9-buster as builder
+ENV APP_USER app
+ENV APP_HOME /go/src
+RUN groupadd $APP_USER && useradd -m -g $APP_USER -l $APP_USER
+RUN mkdir -p $APP_HOME && chown -R $APP_USER:$APP_USER $APP_HOME
+WORKDIR $APP_HOME
+USER $APP_USER
+COPY go.mod main.go ./
+RUN go mod download
+RUN go mod verify
+RUN go build -o fullscript-web
+FROM golang:1.16.9-buster
+ENV APP_USER app
+ENV APP_HOME /go/src
+RUN groupadd $APP_USER && useradd -m -g $APP_USER -l $APP_USER
+RUN mkdir -p $APP_HOME
+WORKDIR $APP_HOME
+COPY --chown=0:0 --from=builder $APP_HOME $APP_HOME
+EXPOSE 3030
+USER $APP_USER
+CMD ["./fullscript-web"]
